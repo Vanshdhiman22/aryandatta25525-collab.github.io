@@ -28,4 +28,3 @@ export default function BSNSite() {
   return (
     <div ref={ref} dangerouslySetInnerHTML={{ __html: markup }} />
   );
-}
