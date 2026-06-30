@@ -1,0 +1,428 @@
+<div id="bsn-root" style="position:relative;width:100%;background:#040506">
+
+  <!-- ============ PERSISTENT WEBGL STAGE (fixed, whole journey) ============ -->
+  <div id="bsn-stage" style="position:fixed;inset:0;z-index:0;pointer-events:none">
+    <canvas id="bsn-canvas" style="display:block;width:100%;height:100%"></canvas>
+  </div>
+  <!-- atmosphere overlays -->
+  <div style="position:fixed;inset:0;z-index:1;pointer-events:none;background-image:radial-gradient(rgba(234,241,236,0.04) 1px,transparent 1px);background-size:34px 34px;opacity:0.6"></div>
+  <div id="bsn-grain" style="position:fixed;inset:-40%;z-index:1;pointer-events:none;opacity:0.05;animation:bsnGrain 7s steps(5) infinite"></div>
+  <div id="bsn-vignette" style="position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(120% 90% at 50% 50%,transparent 55%,rgba(2,3,3,0.7) 100%)"></div>
+  <div style="position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden;opacity:0.5"><div style="position:absolute;left:0;right:0;height:38%;background:linear-gradient(rgba(43,203,134,0.05),transparent);animation:bsnScan 9s linear infinite"></div></div>
+
+  <!-- ============ HUD FRAME (fixed corners) ============ -->
+  <div class="mono" style="position:fixed;inset:0;z-index:120;pointer-events:none;font-size:9.5px;letter-spacing:0.18em;color:rgba(234,241,236,0.32)">
+    <div style="position:absolute;left:clamp(14px,3vw,34px);bottom:clamp(14px,3vw,30px)">28.6139°N 77.2090°E</div>
+    <div id="bsn-hud-act" style="position:absolute;right:clamp(14px,3vw,34px);bottom:clamp(14px,3vw,30px);text-align:right;color:rgba(43,203,134,0.7)">ACT 00 — IGNITION</div>
+  </div>
+
+  <!-- progress -->
+  <div id="bsn-prog" style="position:fixed;top:0;left:0;height:2px;width:0;z-index:130;background:linear-gradient(90deg,#10b981,#2BCB86,#bdffe2)"></div>
+
+  <!-- CURSOR -->
+  <div id="bsn-cursor" style="position:fixed;top:0;left:0;z-index:9998;pointer-events:none;mix-blend-mode:difference">
+    <div id="bsn-cur-disc" style="position:absolute;width:12px;height:12px;left:-6px;top:-6px;border-radius:50%;background:#fff;will-change:transform;transition:width .3s,height .3s,left .3s,top .3s"></div>
+    <div id="bsn-cur-label" class="mono" style="position:absolute;left:0;top:0;transform:translate(-50%,-50%);font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:#040506;opacity:0;white-space:nowrap;will-change:transform">VIEW</div>
+  </div>
+
+  <!-- LOADER -->
+  <div id="bsn-loader" style="position:fixed;inset:0;z-index:9999;background:#040506;display:flex;flex-direction:column;justify-content:space-between;padding:clamp(26px,5vw,58px)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start" class="mono">
+      <div style="font-size:11px;letter-spacing:0.2em;color:rgba(234,241,236,0.5)">BANDNA&nbsp;SHRI&nbsp;NIKA</div>
+      <div style="font-size:11px;letter-spacing:0.2em;color:rgba(234,241,236,0.5)">REACTOR&nbsp;BOOT</div>
+    </div>
+    <div id="bsn-boot" class="mono" style="font-size:12px;line-height:2;color:rgba(43,203,134,0.55);max-width:560px"></div>
+    <div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">
+        <div style="display:flex;align-items:baseline;gap:14px">
+          <span id="bsn-pct" class="mono" style="font-size:clamp(54px,11vw,128px);line-height:0.8;color:#EAF1EC;font-weight:700;font-variant-numeric:tabular-nums">000</span>
+          <span class="mono" style="font-size:13px;color:rgba(234,241,236,0.4)">/ 100</span>
+        </div>
+        <img src="/bsn-logo.png" alt="BSN" style="width:52px;height:52px;object-fit:contain;opacity:0.9">
+      </div>
+      <div style="height:1px;background:rgba(234,241,236,0.14)"><div id="bsn-bar" style="height:100%;width:0%;background:#2BCB86"></div></div>
+    </div>
+  </div>
+
+  <!-- VOID INTRO (post-loader cinematic) -->
+  <div id="bsn-void" style="position:fixed;inset:0;z-index:9990;pointer-events:none;display:flex;align-items:center;justify-content:center;opacity:0;background:radial-gradient(120% 90% at 50% 50%,transparent 30%,rgba(2,3,3,0.55) 100%)">
+    <div style="text-align:center;padding:0 24px">
+      <div id="bsn-void-1" style="font-family:'Space Grotesk',sans-serif;font-weight:400;font-size:clamp(26px,4.4vw,62px);letter-spacing:-0.02em;color:#EAF1EC;opacity:0;filter:blur(8px)">The future isn't coming.</div>
+      <div id="bsn-void-2" style="font-family:'Space Grotesk',sans-serif;font-weight:400;font-style:italic;font-size:clamp(26px,4.4vw,62px);letter-spacing:-0.02em;color:#2BCB86;opacity:0;filter:blur(8px);margin-top:10px">It is already thinking.</div>
+    </div>
+  </div>
+
+  <!-- MOBILE MENU -->
+  <div id="bsn-mobile-menu" style="position:fixed;inset:0;z-index:380;display:none;flex-direction:column;justify-content:center;gap:4px;padding:90px 28px 40px;background:rgba(4,5,6,0.94);backdrop-filter:blur(20px)">
+    <a href="#manifesto" data-mlink="" data-cursor-label="GO" style="font-size:34px;font-weight:500;letter-spacing:-0.02em">Manifesto</a>
+    <a href="#capabilities" data-mlink="" data-cursor-label="GO" style="font-size:34px;font-weight:500;letter-spacing:-0.02em">Capabilities</a>
+    <a href="#research" data-mlink="" data-cursor-label="GO" style="font-size:34px;font-weight:500;letter-spacing:-0.02em">Research</a>
+    <a href="#model" data-mlink="" data-cursor-label="GO" style="font-size:34px;font-weight:500;letter-spacing:-0.02em">Model</a>
+    <a href="#pricing" data-mlink="" data-cursor-label="GO" style="font-size:34px;font-weight:500;letter-spacing:-0.02em">Access</a>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:26px;padding-top:24px;border-top:1px solid rgba(234,241,236,0.12)">
+      <button id="bsn-m-demo" data-cursor-label="BOOK" class="mono" style="padding:15px;border:1px solid rgba(43,203,134,0.4);background:transparent;color:#2BCB86;font-size:12px;letter-spacing:0.14em;text-transform:uppercase">Book a Demo</button>
+      <button id="bsn-m-join" data-cursor-label="JOIN" class="mono" style="padding:15px;border:none;background:#2BCB86;color:#040506;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;font-weight:700">Get Involved</button>
+      <button id="bsn-m-auth" data-cursor-label="OPEN" class="mono" style="padding:15px;border:1px solid rgba(234,241,236,0.18);background:transparent;color:#EAF1EC;font-size:12px;letter-spacing:0.14em;text-transform:uppercase">Sign In</button>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <nav id="bsn-nav" style="position:fixed;top:0;left:0;right:0;z-index:300;transition:background .4s,backdrop-filter .4s,border-color .4s,padding .4s;border-bottom:1px solid transparent;padding:22px clamp(18px,4vw,44px)">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:20px">
+      <a href="#top" data-cursor-label="TOP" style="display:flex;align-items:center;gap:12px;flex-shrink:0">
+        <img src="/bsn-logo.png" alt="BSN" style="width:32px;height:32px;object-fit:contain">
+        <span style="display:flex;flex-direction:column;line-height:1">
+          <span style="font-weight:700;font-size:15px;letter-spacing:0.05em">BSN</span>
+          <span class="mono" style="font-size:7.5px;letter-spacing:0.24em;color:rgba(234,241,236,0.4);margin-top:3px">BANDNA SHRI NIKA</span>
+        </span>
+      </a>
+      <div class="bsn-desktop" style="display:flex;align-items:center;gap:28px">
+        <a href="#manifesto" class="bsn-navlink" data-cursor-label="GO">Manifesto</a>
+        <a href="#capabilities" class="bsn-navlink" data-cursor-label="GO">Capabilities</a>
+        <a href="#research" class="bsn-navlink" data-cursor-label="GO">Research</a>
+        <a href="#model" class="bsn-navlink" data-cursor-label="GO">Model</a>
+        <a href="#pricing" class="bsn-navlink" data-cursor-label="GO">Access</a>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;flex-shrink:0">
+        <button id="bsn-demo-btn" class="bsn-desktop mono" data-cursor-label="BOOK" data-magnetic="" style="display:inline-flex;align-items:center;gap:8px;background:none;border:none;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#EAF1EC"><span style="width:6px;height:6px;border-radius:50%;background:#2BCB86;box-shadow:0 0 6px #2BCB86"></span>Book Demo</button>
+        <a href="#join" class="bsn-desktop mono" data-cursor-label="JOIN" data-magnetic="" style="display:inline-flex;align-items:center;padding:10px 18px;border:1px solid rgba(234,241,236,0.2);font-size:11px;letter-spacing:0.12em;text-transform:uppercase" onmouseover="this.style.background='#2BCB86';this.style.color='#040506';this.style.borderColor='#2BCB86'" onmouseout="this.style.background='transparent';this.style.color='#EAF1EC';this.style.borderColor='rgba(234,241,236,0.2)'">Get Involved</a>
+        <div id="bsn-profile-wrap" style="position:relative">
+          <button id="bsn-profile-btn" data-cursor-label="ACCT" aria-label="Account" style="position:relative;width:38px;height:38px;border-radius:50%;border:1px solid rgba(234,241,236,0.2);background:transparent;display:flex;align-items:center;justify-content:center;color:#EAF1EC">
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"></path></svg>
+            <span id="bsn-online-dot" style="display:none;position:absolute;bottom:0;right:0;width:9px;height:9px;border-radius:50%;background:#2BCB86;border:2px solid #040506"></span>
+          </button>
+          <div id="bsn-auth-dd" class="mono" style="position:absolute;top:calc(100% + 14px);right:0;width:250px;background:rgba(8,12,10,0.96);backdrop-filter:blur(20px);border:1px solid rgba(234,241,236,0.12);opacity:0;pointer-events:none;transform:translateY(-8px);transition:opacity .22s,transform .22s">
+            <div id="bsn-dd-out" style="padding:18px">
+              <p style="margin:0 0 15px;font-size:11px;line-height:1.7;color:rgba(234,241,236,0.45);letter-spacing:0.04em">ACCESS YOUR MISSION DASHBOARD &amp; MANAGE DEPLOYED AGENTS.</p>
+              <div style="display:flex;gap:8px">
+                <button id="bsn-dd-login" data-cursor-label="OPEN" style="flex:1;padding:11px;background:transparent;border:1px solid rgba(234,241,236,0.2);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#EAF1EC">Log In</button>
+                <button id="bsn-dd-reg" data-cursor-label="OPEN" style="flex:1;padding:11px;background:#2BCB86;border:none;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#040506;font-weight:700">Join</button>
+              </div>
+            </div>
+            <div id="bsn-dd-in" style="display:none">
+              <div style="padding:18px;border-bottom:1px solid rgba(234,241,236,0.1)">
+                <div id="bsn-dd-avatar" style="width:38px;height:38px;border-radius:50%;background:#2BCB86;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#040506;margin-bottom:12px">A</div>
+                <div id="bsn-dd-name" style="font-size:13px;font-weight:700;color:#fff;font-family:'Space Grotesk'">User</div>
+                <div id="bsn-dd-email" style="font-size:10px;color:rgba(234,241,236,0.4);margin-top:3px">user@bsn.ai</div>
+                <div style="display:inline-flex;align-items:center;gap:6px;margin-top:11px;font-size:9px;letter-spacing:0.14em;color:#2BCB86"><span style="width:5px;height:5px;border-radius:50%;background:#2BCB86"></span>ACTIVE AGENT</div>
+              </div>
+              <a href="#" id="bsn-dd-dash" data-cursor-label="GO" style="display:block;padding:12px 18px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(234,241,236,0.6)">Dashboard</a>
+              <a href="#" data-cursor-label="GO" style="display:block;padding:12px 18px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(234,241,236,0.6)">Mission Impact</a>
+              <button id="bsn-dd-logout" data-cursor-label="OUT" style="display:block;width:100%;text-align:left;padding:12px 18px;background:none;border:none;border-top:1px solid rgba(234,241,236,0.08);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,120,120,0.7);font-family:'Space Mono'">Log Out</button>
+            </div>
+          </div>
+        </div>
+        <button id="bsn-burger" class="bsn-mobile-only" data-cursor-label="MENU" aria-label="Menu" style="display:none;width:40px;height:40px;border:1px solid rgba(234,241,236,0.2);background:transparent;flex-direction:column;align-items:center;justify-content:center;gap:5px">
+          <span class="bsn-bl" style="width:16px;height:1.5px;background:#EAF1EC;transition:transform .4s"></span>
+          <span class="bsn-bl" style="width:16px;height:1.5px;background:#EAF1EC;transition:transform .4s"></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- AUTH MODAL -->
+  <div id="bsn-modal" style="position:fixed;inset:0;z-index:500;display:none;align-items:stretch;justify-content:flex-end;background:rgba(0,0,0,0.72);backdrop-filter:blur(6px)">
+    <div id="bsn-modal-box" style="width:min(460px,100%);height:100%;overflow-y:auto;background:#07090A;border-left:1px solid rgba(43,203,134,0.18);padding:clamp(26px,4vw,46px);animation:bsnModalIn .42s cubic-bezier(.6,0,.2,1)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:40px">
+        <div style="display:flex;align-items:center;gap:11px"><img src="/bsn-logo.png" style="width:30px;height:30px;object-fit:contain" alt="BSN"><span style="font-weight:700;letter-spacing:0.04em">BSN</span></div>
+        <button id="bsn-modal-x" data-cursor-label="CLOSE" class="mono" style="width:34px;height:34px;border:1px solid rgba(234,241,236,0.2);background:none;color:rgba(234,241,236,0.6);font-size:13px">✕</button>
+      </div>
+      <div class="mono" style="font-size:11px;letter-spacing:0.2em;color:#2BCB86;margin-bottom:10px">ACCESS / 00</div>
+      <h3 id="bsn-modal-title" style="margin:0 0 32px;font-size:34px;font-weight:600;letter-spacing:-0.02em;line-height:1.05">Enter the mission.</h3>
+      <div id="bsn-tabbar" style="display:flex;border-bottom:1px solid rgba(234,241,236,0.12);margin-bottom:30px">
+        <button id="bsn-tab-login" data-cursor-label="TAB" class="mono" style="flex:1;padding:13px 0;background:none;border:none;border-bottom:2px solid #2BCB86;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#EAF1EC;margin-bottom:-1px">Log In</button>
+        <button id="bsn-tab-reg" data-cursor-label="TAB" class="mono" style="flex:1;padding:13px 0;background:none;border:none;border-bottom:2px solid transparent;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(234,241,236,0.4);margin-bottom:-1px">Register</button>
+      </div>
+      <div id="bsn-form-login">
+        <label class="mono bsn-flabel">EMAIL</label><input id="bsn-l-email" type="email" placeholder="you@example.com" data-cursor-label="TYPE" class="bsn-input">
+        <label class="mono bsn-flabel">PASSWORD</label><input id="bsn-l-pass" type="password" placeholder="••••••••" data-cursor-label="TYPE" class="bsn-input">
+                <div style="text-align:right;margin-top:12px"><a href="#" id="bsn-forgot-link" data-cursor-label="RESET" class="mono" style="font-size:10px;letter-spacing:0.12em;color:rgba(43,203,134,0.85)">FORGOT PASSWORD?</a></div>
+        <button id="bsn-do-login" data-cursor-label="ENTER" data-magnetic="" class="bsn-submit">Sign In →</button>
+      </div>
+      <div id="bsn-form-reg" style="display:none">
+        <label class="mono bsn-flabel">FULL NAME</label><input id="bsn-r-name" type="text" placeholder="Your name" data-cursor-label="TYPE" class="bsn-input">
+        <label class="mono bsn-flabel">EMAIL</label><input id="bsn-r-email" type="email" placeholder="you@example.com" data-cursor-label="TYPE" class="bsn-input">
+        <label class="mono bsn-flabel">PHONE</label><input id="bsn-r-phone" type="tel" placeholder="9999999999" data-cursor-label="TYPE" class="bsn-input">
+        <label class="mono bsn-flabel">ROLE</label><input id="bsn-r-role" type="text" placeholder="Founder / Developer / Investor" data-cursor-label="TYPE" class="bsn-input">
+        <label class="mono bsn-flabel">LOOKING FOR</label><input id="bsn-r-looking" type="text" placeholder="What are you looking for?" data-cursor-label="TYPE" class="bsn-input">
+        <label class="mono bsn-flabel">PASSWORD</label><input id="bsn-r-pass" type="password" placeholder="Create a password" data-cursor-label="TYPE" class="bsn-input">
+        <button id="bsn-do-reg" data-cursor-label="ENTER" data-magnetic="" class="bsn-submit">Create Account →</button>
+      </div>
+      <div id="bsn-form-forgot" style="display:none">
+        <div id="bsn-fp-step1">
+          <p class="mono" style="font-size:12px;line-height:1.7;color:rgba(234,241,236,0.5);margin:0 0 4px;letter-spacing:0.02em">Enter your account email and we'll send you a 6-digit reset code.</p>
+          <label class="mono bsn-flabel">EMAIL</label><input id="bsn-fp-email" type="email" placeholder="you@example.com" data-cursor-label="TYPE" class="bsn-input">
+          <button id="bsn-fp-send" data-cursor-label="SEND" data-magnetic="" class="bsn-submit">Send Reset Code &rarr;</button>
+        </div>
+        <div id="bsn-fp-step2" style="display:none">
+          <p class="mono" style="font-size:12px;line-height:1.7;color:rgba(234,241,236,0.5);margin:0 0 4px;letter-spacing:0.02em">We emailed a 6-digit code to <strong id="bsn-fp-emailshow" style="color:#EAF1EC"></strong>. Enter it below with your new password.</p>
+          <label class="mono bsn-flabel">6-DIGIT CODE</label><input id="bsn-fp-otp" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="123456" data-cursor-label="TYPE" class="bsn-input">
+          <label class="mono bsn-flabel">NEW PASSWORD</label><input id="bsn-fp-pass" type="password" placeholder="New password (min 6 chars)" data-cursor-label="TYPE" class="bsn-input">
+          <button id="bsn-fp-reset" data-cursor-label="RESET" data-magnetic="" class="bsn-submit">Reset Password &rarr;</button>
+          <p class="mono" style="text-align:center;margin-top:14px;font-size:11px;color:rgba(234,241,236,0.4)">Didn't get it? <a href="#" id="bsn-fp-resend" style="color:#2BCB86">Resend code</a></p>
+        </div>
+        <p class="mono" style="text-align:center;margin-top:18px;font-size:11px"><a href="#" id="bsn-fp-back" style="color:rgba(234,241,236,0.55)">&larr; Back to Sign In</a></p>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ===== AI AGENT MARKETPLACE / CHECKOUT (merged from dashboard) ===== -->
+  <div id="bsn-market" style="position:fixed;inset:0;z-index:520;display:none;background:rgba(0,0,0,0.78);backdrop-filter:blur(6px)">
+    <div id="bsn-market-box" style="position:absolute;top:0;right:0;width:min(900px,100%);height:100%;overflow-y:auto;background:#07090A;border-left:1px solid rgba(43,203,134,0.18);padding:clamp(24px,4vw,44px);animation:bsnModalIn .42s cubic-bezier(.6,0,.2,1)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
+        <div style="display:flex;align-items:center;gap:11px"><img src="/bsn-logo.png" style="width:30px;height:30px;object-fit:contain" alt="BSN"><div><div style="font-weight:700;letter-spacing:0.04em">AI AGENT MARKETPLACE</div><div class="mono" style="font-size:10px;letter-spacing:0.16em;color:rgba(234,241,236,0.4);margin-top:2px">BUY &middot; DEPLOY &middot; BOOK A DEMO</div></div></div>
+        <button id="bsn-market-x" data-cursor-label="CLOSE" class="mono" style="width:34px;height:34px;border:1px solid rgba(234,241,236,0.2);background:none;color:rgba(234,241,236,0.6);font-size:13px">&#10005;</button>
+      </div>
+      <p class="mono" style="font-size:11px;line-height:1.8;color:rgba(234,241,236,0.45);margin:0 0 24px;letter-spacing:0.03em">SECURE RAZORPAY OR PAYPAL CHECKOUT &middot; DEPLOY IN ONE CLICK &middot; 50% OF PROFITS FUND THE RESEARCH MISSION.</p>
+      <div id="bsn-mkt-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:16px"></div>
+    </div>
+  </div>
+
+  <!-- payment-method chooser -->
+  <div id="bsn-pay" style="position:fixed;inset:0;z-index:540;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px)">
+    <div style="width:min(400px,100%);background:#07090A;border:1px solid rgba(43,203,134,0.22);padding:26px;position:relative">
+      <button id="bsn-pay-x" data-cursor-label="CLOSE" class="mono" style="position:absolute;top:14px;right:14px;width:30px;height:30px;border:1px solid rgba(234,241,236,0.2);background:none;color:rgba(234,241,236,0.5);font-size:13px">&#10005;</button>
+      <div class="mono" style="font-size:11px;letter-spacing:0.16em;color:#2BCB86;margin-bottom:6px">CHECKOUT</div>
+      <div id="bsn-pay-name" style="font-size:19px;font-weight:700;margin-bottom:3px">Agent</div>
+      <div id="bsn-pay-price" class="mono" style="font-size:12px;color:rgba(234,241,236,0.45);margin-bottom:22px">Choose a payment method</div>
+      <button id="bsn-pay-rzp" data-cursor-label="PAY" class="bsn-submit" style="margin-top:0;margin-bottom:10px">&#9889; Pay with Razorpay &middot; cards / UPI</button>
+      <button id="bsn-pay-ppl" data-cursor-label="PAY" style="width:100%;padding:15px;background:#ffc439;color:#003087;border:none;font-family:'Space Mono';font-size:13px;font-weight:700;letter-spacing:0.04em">PayPal</button>
+      <p class="mono" style="font-size:9.5px;line-height:1.6;color:rgba(234,241,236,0.32);margin:16px 0 0;text-align:center">RAZORPAY CONFIRMS INSTANTLY. PAYPAL OPENS A PAYMENT LINK &mdash; YOU CONFIRM HERE ONCE SENT.</p>
+    </div>
+  </div>
+
+  <!-- paypal confirm -->
+  <div id="bsn-ppc" style="position:fixed;inset:0;z-index:560;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,0.82);backdrop-filter:blur(8px)">
+    <div style="width:min(420px,100%);background:#07090A;border:1px solid rgba(255,196,57,0.32);padding:28px;position:relative;text-align:center">
+      <button id="bsn-ppc-x" data-cursor-label="CLOSE" class="mono" style="position:absolute;top:14px;right:14px;width:30px;height:30px;border:1px solid rgba(234,241,236,0.2);background:none;color:rgba(234,241,236,0.5);font-size:13px">&#10005;</button>
+      <div style="font-size:38px;margin-bottom:10px">&#128184;</div>
+      <div style="font-size:18px;font-weight:700;margin-bottom:8px">Complete your PayPal payment</div>
+      <p class="mono" style="font-size:12px;line-height:1.7;color:rgba(234,241,236,0.5);margin:0 0 16px">A PAYPAL TAB OPENED FOR <strong id="bsn-ppc-name" style="color:#EAF1EC"></strong>. SEND THE PAYMENT THERE, THEN CONFIRM BELOW TO UNLOCK THE AGENT.</p>
+      <a id="bsn-ppc-link" href="#" target="_blank" rel="noreferrer" class="mono" style="display:block;font-size:11px;color:#ffc439;margin-bottom:18px;word-break:break-all">&#8599; RE-OPEN PAYMENT LINK</a>
+      <button id="bsn-ppc-confirm" data-cursor-label="UNLOCK" class="bsn-submit" style="margin-top:0">I've Paid &mdash; Unlock Agent</button>
+      <p class="mono" style="font-size:9px;color:rgba(234,241,236,0.3);margin:12px 0 0;letter-spacing:0.04em">PAYPAL PAYMENTS ARE VERIFIED MANUALLY. MISUSE MAY REVOKE ACCESS.</p>
+    </div>
+  </div>
+
+  <!-- toast -->
+  <div id="bsn-toast" class="mono" style="position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:600;display:none;max-width:90vw;padding:13px 20px;background:rgba(8,12,10,0.96);border:1px solid rgba(43,203,134,0.4);color:#EAF1EC;font-size:12px;letter-spacing:0.03em;text-align:center"></div>
+
+  <style id="bsn-merge-css">
+    .bsn-ag{display:flex;flex-direction:column;gap:11px;padding:20px;background:rgba(234,241,236,0.02);border:1px solid rgba(234,241,236,0.1);transition:border-color .3s,transform .3s}
+    .bsn-ag:hover{border-color:rgba(43,203,134,0.45);transform:translateY(-3px)}
+    .bsn-ag-tag{padding:3px 9px;font-size:9px;font-weight:700;letter-spacing:0.14em;font-family:'Space Mono';color:#2BCB86;border:1px solid rgba(43,203,134,0.4);white-space:nowrap}
+    .bsn-ag-name{font-size:16px;font-weight:700;color:#EAF1EC}
+    .bsn-ag-desc{font-size:12px;line-height:1.6;color:rgba(234,241,236,0.45)}
+    .bsn-ag-feat{display:flex;flex-direction:column;gap:5px;font-size:11px;color:rgba(234,241,236,0.4)}
+    .bsn-ag-price{font-size:18px;font-weight:800;color:#EAF1EC}
+    .bsn-ag-btn{width:100%;padding:11px;font-family:'Space Mono';font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border:none}
+    .bsn-ag-buy{background:#2BCB86;color:#040506;font-weight:700}
+    .bsn-ag-ppl{background:#ffc439;color:#003087;font-weight:700}
+    .bsn-ag-deploy{background:linear-gradient(90deg,#2BCB86,#38bdf8);color:#040506;font-weight:700}
+    .bsn-ag-ghost{background:transparent;border:1px solid rgba(234,241,236,0.18);color:rgba(234,241,236,0.7)}
+    .bsn-ag-open{background:rgba(43,203,134,0.12);border:1px solid rgba(43,203,134,0.4);color:#2BCB86;font-weight:700;text-align:center;display:block}
+  </style>
+
+  <!-- ============ CINEMATIC ACTS (over canvas) ============ -->
+  <main id="top" style="position:relative;z-index:2">
+
+    <!-- ACT 00 — HERO -->
+    <section data-act="0" data-actname="ACT 00 — IGNITION" data-screen-label="Hero" style="position:relative;min-height:100vh;display:flex;flex-direction:column;justify-content:space-between;padding:120px clamp(18px,4vw,44px) clamp(60px,9vh,90px)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px" class="mono" data-hero="">
+        <div style="font-size:11px;letter-spacing:0.18em;color:rgba(234,241,236,0.5);line-height:1.9"><div style="color:#2BCB86">● REACTOR ONLINE</div><div>SEED STAGE — DELHI, IN</div></div>
+        <div style="text-align:right;font-size:11px;letter-spacing:0.18em;color:rgba(234,241,236,0.5);line-height:1.9"><div>EST. 2026</div><div>AI SYSTEMS / 3D WORLD</div></div>
+      </div>
+      <div style="position:relative;max-width:1200px">
+        <div class="mono" data-hero="" style="font-size:12px;letter-spacing:0.2em;color:#2BCB86;margin-bottom:24px">[ AUTONOMOUS INTELLIGENCE ]</div>
+        <h1 data-hero-head="" style="margin:0;font-weight:500;font-size:clamp(40px,8.6vw,150px);line-height:0.9;letter-spacing:-0.035em">Agents that run<br>the <span style="font-style:italic;font-weight:400;color:#2BCB86">3D world.</span></h1>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:44px" data-hero="">
+          <a href="#join" data-cursor-label="START" data-magnetic="" class="mono" style="display:inline-flex;align-items:center;gap:11px;padding:16px 28px;background:#EAF1EC;color:#040506;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700">Start the journey →</a>
+          <button id="bsn-hero-demo" data-cursor-label="BOOK" data-magnetic="" class="mono" style="display:inline-flex;align-items:center;gap:11px;padding:16px 28px;background:transparent;border:1px solid rgba(234,241,236,0.22);color:#EAF1EC;font-size:12px;letter-spacing:0.12em;text-transform:uppercase">Book a demo</button>
+          <div class="mono" style="display:flex;gap:22px;margin-left:8px">
+            <div><div style="font-size:22px;font-weight:700;font-family:'Space Grotesk'">70%+</div><div style="font-size:9px;letter-spacing:0.14em;color:rgba(234,241,236,0.4)">COST CUT</div></div>
+            <div><div style="font-size:22px;font-weight:700;font-family:'Space Grotesk'">10%</div><div style="font-size:9px;letter-spacing:0.14em;color:rgba(234,241,236,0.4)">→ RESEARCH</div></div>
+            <div><div style="font-size:22px;font-weight:700;font-family:'Space Grotesk'">04</div><div style="font-size:9px;letter-spacing:0.14em;color:rgba(234,241,236,0.4)">PILLARS</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TICKER -->
+    <section style="position:relative;z-index:2;border-top:1px solid rgba(234,241,236,0.1);border-bottom:1px solid rgba(234,241,236,0.1);padding:16px 0;overflow:hidden;backdrop-filter:blur(2px)">
+      <div id="bsn-ticker" class="mono" style="display:flex;width:max-content;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(234,241,236,0.4);will-change:transform">
+        <div style="display:flex;gap:40px;padding-right:40px"><span>Autonomous Agents</span><span style="color:#2BCB86">◇</span><span>AI Digital Twins</span><span style="color:#2BCB86">◇</span><span>Agentic Automation</span><span style="color:#2BCB86">◇</span><span>Ocean Revival</span><span style="color:#2BCB86">◇</span><span>Biotechnology</span><span style="color:#2BCB86">◇</span><span>The Multiverse</span><span style="color:#2BCB86">◇</span></div>
+        <div aria-hidden="true" style="display:flex;gap:40px;padding-right:40px"><span>Autonomous Agents</span><span style="color:#2BCB86">◇</span><span>AI Digital Twins</span><span style="color:#2BCB86">◇</span><span>Agentic Automation</span><span style="color:#2BCB86">◇</span><span>Ocean Revival</span><span style="color:#2BCB86">◇</span><span>Biotechnology</span><span style="color:#2BCB86">◇</span><span>The Multiverse</span><span style="color:#2BCB86">◇</span></div>
+      </div>
+    </section>
+
+    <!-- ACT 01 — MANIFESTO (light chamber) -->
+    <section id="manifesto" data-act="1" data-actname="ACT 01 — THE THESIS" data-screen-label="Manifesto" style="position:relative;min-height:130vh;display:flex;flex-direction:column;justify-content:center;padding:clamp(80px,12vh,160px) clamp(18px,5vw,90px)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:clamp(40px,7vh,70px)">
+        <span class="mono" data-fade="" style="font-size:11px;letter-spacing:0.2em;color:#2BCB86">01 — MANIFESTO</span>
+        <span class="mono" data-fade="" style="font-size:11px;letter-spacing:0.2em;color:rgba(234,241,236,0.4)">THE THESIS</span>
+      </div>
+      <p id="bsn-manifesto-text" style="margin:0;max-width:20ch;font-weight:500;font-size:clamp(30px,5vw,80px);line-height:1.12;letter-spacing:-0.025em">We deploy autonomous intelligence to run the operations of the physical and digital world — then route its profit toward biotechnology, the oceans, and the frontiers of human consciousness.</p>
+      <p class="mono" data-fade="" style="margin:48px 0 0;align-self:flex-end;max-width:38ch;text-align:right;font-size:12px;line-height:1.9;letter-spacing:0.04em;color:rgba(234,241,236,0.5)">NOT JUST BUILDING AI. BUILDING THE BRIDGE BETWEEN SILICON INTELLIGENCE AND HUMAN TRANSCENDENCE.</p>
+    </section>
+
+    <!-- ACT 02 — CAPABILITIES (command center, scroll beats) -->
+    <section id="capabilities" data-act="2" data-actname="ACT 02 — THE ENGINE" data-screen-label="Capabilities" style="position:relative;padding:clamp(60px,9vh,120px) clamp(18px,5vw,90px) clamp(80px,12vh,150px)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:clamp(50px,9vh,110px)">
+        <span class="mono" data-fade="" style="font-size:11px;letter-spacing:0.2em;color:#2BCB86">02 — CAPABILITIES</span>
+        <span class="mono" data-fade="" style="font-size:11px;letter-spacing:0.2em;color:rgba(234,241,236,0.4)">THE CASH-COW ENGINE</span>
+      </div>
+      <div class="bsn-cap-stage" style="display:flex;flex-direction:column;gap:clamp(80px,16vh,200px)">
+        <div class="bsn-split" data-capbeat="" style="display:grid;grid-template-columns:1fr 1fr;gap:50px;align-items:center">
+          <div><div class="mono" style="font-size:13px;color:#2BCB86;margin-bottom:18px">01 / AUTONOMOUS AGENTS</div><h3 data-reveal="" style="margin:0;font-weight:500;font-size:clamp(30px,4vw,68px);line-height:0.98;letter-spacing:-0.025em">Enterprise agents that cut operations by 70%+</h3></div>
+          <p data-fade="" style="margin:0;font-size:clamp(15px,1.5vw,19px);line-height:1.75;color:rgba(234,241,236,0.6);max-width:46ch">Intelligent agents automate workflows across industries — slashing cost, generating new revenue streams, working around the clock inside immersive 3D environments.</p>
+        </div>
+        <div class="bsn-split" data-capbeat="" style="display:grid;grid-template-columns:1fr 1fr;gap:50px;align-items:center">
+          <p data-fade="" style="margin:0;font-size:clamp(15px,1.5vw,19px);line-height:1.75;color:rgba(234,241,236,0.6);max-width:46ch;order:2">Live simulations of manufacturing, healthcare and logistics — a mirror world where AI optimises before reality moves.</p>
+          <div style="order:1;text-align:right"><div class="mono" style="font-size:13px;color:#2BCB86;margin-bottom:18px">02 / AI DIGITAL TWINS</div><h3 data-reveal="" style="margin:0;font-weight:500;font-size:clamp(30px,4vw,68px);line-height:0.98;letter-spacing:-0.025em">Real-time twins for any industry on Earth</h3></div>
+        </div>
+        <div class="bsn-split" data-capbeat="" style="display:grid;grid-template-columns:1fr 1fr;gap:50px;align-items:center">
+          <div><div class="mono" style="font-size:13px;color:#2BCB86;margin-bottom:18px">03 / AGENTIC AUTOMATION</div><h3 data-reveal="" style="margin:0;font-weight:500;font-size:clamp(30px,4vw,68px);line-height:0.98;letter-spacing:-0.025em">Workflow intelligence that funds the mission</h3></div>
+          <div class="mono" data-fade="" style="border-top:1px solid rgba(234,241,236,0.14)">
+            <div style="display:flex;justify-content:space-between;padding:16px 0;border-bottom:1px solid rgba(234,241,236,0.1);font-size:13px"><span style="color:rgba(234,241,236,0.5)">UPTIME</span><span>24 / 7 / 365</span></div>
+            <div style="display:flex;justify-content:space-between;padding:16px 0;border-bottom:1px solid rgba(234,241,236,0.1);font-size:13px"><span style="color:rgba(234,241,236,0.5)">DEPLOYMENT</span><span>&lt; 2 WEEKS</span></div>
+            <div style="display:flex;justify-content:space-between;padding:16px 0;border-bottom:1px solid rgba(234,241,236,0.1);font-size:13px"><span style="color:rgba(234,241,236,0.5)">SCALE</span><span>METAVERSE</span></div>
+            <div style="display:flex;justify-content:space-between;padding:16px 0;font-size:13px"><span style="color:rgba(234,241,236,0.5)">TO RESEARCH</span><span style="color:#2BCB86">10% OF PROFIT</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ACT 03 — RESEARCH (constellation rows) -->
+    <section id="research" data-act="3" data-actname="ACT 03 — THE FRONTIER" data-screen-label="Research" style="position:relative;padding:clamp(70px,11vh,150px) clamp(18px,5vw,90px)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:clamp(36px,6vh,60px)">
+        <span class="mono" data-fade="" style="font-size:11px;letter-spacing:0.2em;color:#2BCB86">03 — RESEARCH</span>
+        <span class="mono" data-fade="" style="font-size:11px;letter-spacing:0.2em;color:rgba(234,241,236,0.4)">WHERE THE PROFIT GOES</span>
+      </div>
+      <h2 data-reveal="" style="margin:0 0 clamp(40px,7vh,70px);font-weight:500;font-size:clamp(34px,6vw,96px);line-height:0.95;letter-spacing:-0.03em;max-width:13ch">Four frontiers,<br>one mission.</h2>
+      <div>
+        <div class="bsn-rrow" style="position:relative;padding:34px 0;border-top:1px solid rgba(234,241,236,0.14)"><div style="display:flex;align-items:flex-start;gap:clamp(18px,4vw,64px)"><span class="bsn-rn mono" style="font-size:13px;color:rgba(234,241,236,0.4);padding-top:12px;flex-shrink:0;transition:color .4s">01</span><div style="flex:1"><h3 class="bsn-rh" style="margin:0;font-weight:500;font-size:clamp(26px,4.4vw,64px);line-height:1.0;letter-spacing:-0.02em;color:rgba(234,241,236,0.72);transition:color .4s">Biotechnology</h3><div class="bsn-rd"><p style="margin:0;max-width:62ch;font-size:16px;line-height:1.7;color:rgba(234,241,236,0.55)">Innovative biotech that recycles plastics, cleans oceans, and restores marine ecosystems at global scale.</p></div></div><span class="mono" style="font-size:11px;letter-spacing:0.14em;color:rgba(234,241,236,0.35);padding-top:14px;flex-shrink:0">ACTIVE</span></div><div class="bsn-rl" style="position:absolute;left:0;bottom:-1px;height:1px;width:100%;background:#2BCB86;transform:scaleX(0);transform-origin:left;transition:transform .6s cubic-bezier(.6,0,.2,1)"></div></div>
+        <div class="bsn-rrow" style="position:relative;padding:34px 0;border-top:1px solid rgba(234,241,236,0.14)"><div style="display:flex;align-items:flex-start;gap:clamp(18px,4vw,64px)"><span class="bsn-rn mono" style="font-size:13px;color:rgba(234,241,236,0.4);padding-top:12px;flex-shrink:0;transition:color .4s">02</span><div style="flex:1"><h3 class="bsn-rh" style="margin:0;font-weight:500;font-size:clamp(26px,4.4vw,64px);line-height:1.0;letter-spacing:-0.02em;color:rgba(234,241,236,0.72);transition:color .4s">Ocean Revival</h3><div class="bsn-rd"><p style="margin:0;max-width:62ch;font-size:16px;line-height:1.7;color:rgba(234,241,236,0.55)">AI-guided cleanup fleets and nature-based technologies to heal our blue planet for generations.</p></div></div><span class="mono" style="font-size:11px;letter-spacing:0.14em;color:rgba(234,241,236,0.35);padding-top:14px;flex-shrink:0">ACTIVE</span></div><div class="bsn-rl" style="position:absolute;left:0;bottom:-1px;height:1px;width:100%;background:#2BCB86;transform:scaleX(0);transform-origin:left;transition:transform .6s cubic-bezier(.6,0,.2,1)"></div></div>
+        <div class="bsn-rrow" style="position:relative;padding:34px 0;border-top:1px solid rgba(234,241,236,0.14)"><div style="display:flex;align-items:flex-start;gap:clamp(18px,4vw,64px)"><span class="bsn-rn mono" style="font-size:13px;color:rgba(234,241,236,0.4);padding-top:12px;flex-shrink:0;transition:color .4s">03</span><div style="flex:1"><h3 class="bsn-rh" style="margin:0;font-weight:500;font-size:clamp(26px,4.4vw,64px);line-height:1.0;letter-spacing:-0.02em;color:rgba(234,241,236,0.72);transition:color .4s">Emotion-Driven Energies</h3><div class="bsn-rd"><p style="margin:0;max-width:62ch;font-size:16px;line-height:1.7;color:rgba(234,241,236,0.55)">Scientific exploration of higher emotional states and emotion-driven energies — made universally accessible.</p></div></div><span class="mono" style="font-size:11px;letter-spacing:0.14em;color:rgba(234,241,236,0.35);padding-top:14px;flex-shrink:0">R&amp;D</span></div><div class="bsn-rl" style="position:absolute;left:0;bottom:-1px;height:1px;width:100%;background:#2BCB86;transform:scaleX(0);transform-origin:left;transition:transform .6s cubic-bezier(.6,0,.2,1)"></div></div>
+        <div class="bsn-rrow" style="position:relative;padding:34px 0;border-top:1px solid rgba(234,241,236,0.14);border-bottom:1px solid rgba(234,241,236,0.14)"><div style="display:flex;align-items:flex-start;gap:clamp(18px,4vw,64px)"><span class="bsn-rn mono" style="font-size:13px;color:rgba(234,241,236,0.4);padding-top:12px;flex-shrink:0;transition:color .4s">04</span><div style="flex:1"><h3 class="bsn-rh" style="margin:0;font-weight:500;font-size:clamp(26px,4.4vw,64px);line-height:1.0;letter-spacing:-0.02em;color:rgba(234,241,236,0.72);transition:color .4s">Universe &amp; Multiverse</h3><div class="bsn-rd"><p style="margin:0;max-width:62ch;font-size:16px;line-height:1.7;color:rgba(234,241,236,0.55)">Theoretical and experimental research into consciousness across dimensions and multiversal pathways.</p></div></div><span class="mono" style="font-size:11px;letter-spacing:0.14em;color:rgba(234,241,236,0.35);padding-top:14px;flex-shrink:0">FRONTIER</span></div><div class="bsn-rl" style="position:absolute;left:0;bottom:-1px;height:1px;width:100%;background:#2BCB86;transform:scaleX(0);transform-origin:left;transition:transform .6s cubic-bezier(.6,0,.2,1)"></div></div>
+      </div>
+    </section>
+
+    <!-- ACT 04 — MODEL (cycle) -->
+    <section id="model" data-act="4" data-actname="ACT 04 — THE CYCLE" data-screen-label="Model" style="position:relative;padding:clamp(70px,11vh,150px) clamp(18px,5vw,90px)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:clamp(50px,8vh,90px)">
+        <span class="mono" data-fade="" style="font-size:11px;letter-spacing:0.2em;color:#2BCB86">04 — THE MODEL</span>
+        <span class="mono" data-fade="" style="font-size:11px;letter-spacing:0.2em;color:rgba(234,241,236,0.4)">THE VIRTUOUS CYCLE</span>
+      </div>
+      <div class="bsn-split" style="display:grid;grid-template-columns:0.9fr 1.1fr;gap:clamp(40px,6vw,90px);align-items:center">
+        <div>
+          <h2 data-reveal="" style="margin:0;font-weight:500;font-size:clamp(32px,5vw,82px);line-height:0.95;letter-spacing:-0.03em">A self-reinforcing engine.</h2>
+          <div style="margin-top:46px">
+            <div class="bsn-cyc-step" data-step="0" style="display:flex;gap:22px;padding:24px 0;border-top:1px solid rgba(234,241,236,0.14);transition:opacity .5s"><span class="mono" style="font-size:13px;color:#2BCB86">01</span><div><h4 style="margin:0;font-size:20px;font-weight:600">Deploy AI Agents</h4><p style="margin:7px 0 0;font-size:15px;color:rgba(234,241,236,0.55);line-height:1.6">Cut operational cost for businesses worldwide.</p></div></div>
+            <div class="bsn-cyc-step" data-step="1" style="display:flex;gap:22px;padding:24px 0;border-top:1px solid rgba(234,241,236,0.14);transition:opacity .5s"><span class="mono" style="font-size:13px;color:#2BCB86">02</span><div><h4 style="margin:0;font-size:20px;font-weight:600">Generate Revenue</h4><p style="margin:7px 0 0;font-size:15px;color:rgba(234,241,236,0.55);line-height:1.6">Sustainable cash flow from AI services.</p></div></div>
+            <div class="bsn-cyc-step" data-step="2" style="display:flex;gap:22px;padding:24px 0;border-top:1px solid rgba(234,241,236,0.14);border-bottom:1px solid rgba(234,241,236,0.14);transition:opacity .5s"><span class="mono" style="font-size:13px;color:#2BCB86">03</span><div><h4 style="margin:0;font-size:20px;font-weight:600">Fund the Mission</h4><p style="margin:7px 0 0;font-size:15px;color:rgba(234,241,236,0.55);line-height:1.6">10% of profit fuels research, oceans &amp; consciousness.</p></div></div>
+          </div>
+        </div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;min-height:360px">
+          <svg id="bsn-cycle-svg" viewBox="0 0 400 400" style="width:100%;max-width:440px;overflow:visible">
+            <circle cx="200" cy="200" r="150" fill="none" stroke="rgba(234,241,236,0.1)" stroke-width="1"></circle>
+            <path id="bsn-cycle-path" d="M200,50 A150,150 0 1,1 199.9,50" fill="none" stroke="#2BCB86" stroke-width="2" stroke-linecap="round"></path>
+            <g class="mono">
+              <circle cx="200" cy="50" r="6" fill="#040506" stroke="#2BCB86" stroke-width="2"></circle>
+              <circle cx="330" cy="275" r="6" fill="#040506" stroke="#2BCB86" stroke-width="2"></circle>
+              <circle cx="70" cy="275" r="6" fill="#040506" stroke="#2BCB86" stroke-width="2"></circle>
+              <text x="200" y="34" text-anchor="middle" fill="rgba(234,241,236,0.7)" font-size="11" letter-spacing="2">DEPLOY</text>
+              <text x="356" y="290" text-anchor="middle" fill="rgba(234,241,236,0.7)" font-size="11" letter-spacing="2">REVENUE</text>
+              <text x="44" y="290" text-anchor="middle" fill="rgba(234,241,236,0.7)" font-size="11" letter-spacing="2">FUND</text>
+            </g>
+            <text x="200" y="195" text-anchor="middle" fill="#EAF1EC" font-size="40" font-weight="700" font-family="Space Grotesk">10%</text>
+            <text x="200" y="222" text-anchor="middle" fill="rgba(234,241,236,0.45)" font-size="11" letter-spacing="3" font-family="Space Mono">TO MISSION</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- ACT 05 — FOUNDERS -->
+    <section id="founders" data-act="5" data-actname="ACT 05 — THE ARCHITECTS" data-screen-label="Founders" style="position:relative;padding:clamp(70px,11vh,150px) clamp(18px,5vw,90px)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:clamp(50px,8vh,80px)">
+        <span class="mono" data-fade="" style="font-size:11px;letter-spacing:0.2em;color:#2BCB86">05 — THE FOUNDERS</span>
+        <span class="mono" data-fade="" style="font-size:11px;letter-spacing:0.2em;color:rgba(234,241,236,0.4)">DELHI, INDIA</span>
+      </div>
+      <div class="bsn-found-row" style="display:flex;justify-content:space-between;align-items:flex-end;gap:30px;padding:40px 0;border-top:1px solid rgba(234,241,236,0.14)" data-fade="">
+        <div style="display:flex;align-items:flex-end;gap:clamp(20px,4vw,60px)"><span style="font-size:clamp(64px,9vw,150px);font-weight:700;line-height:0.8;letter-spacing:-0.04em;color:#2BCB86">AD</span><div><h3 style="margin:0;font-size:clamp(26px,3vw,44px);font-weight:600;letter-spacing:-0.02em">Aryan Datta</h3><div class="mono" style="font-size:11px;letter-spacing:0.18em;color:rgba(234,241,236,0.5);margin-top:8px">FOUNDER</div></div></div>
+        <p style="margin:0;max-width:40ch;font-size:15px;line-height:1.7;color:rgba(234,241,236,0.55)">Visionary behind BSN's AI-powered 3D world. Steering autonomous agents, digital twins and agentic AI that cut cost and fund humanity's awakening.</p>
+      </div>
+      <div class="bsn-found-row" style="display:flex;justify-content:space-between;align-items:flex-end;gap:30px;padding:40px 0;border-top:1px solid rgba(234,241,236,0.14);border-bottom:1px solid rgba(234,241,236,0.14)" data-fade="">
+        <div style="display:flex;align-items:flex-end;gap:clamp(20px,4vw,60px)"><span style="font-size:clamp(64px,9vw,150px);font-weight:700;line-height:0.8;letter-spacing:-0.04em;color:#EAF1EC">VD</span><div><h3 style="margin:0;font-size:clamp(26px,3vw,44px);font-weight:600;letter-spacing:-0.02em">Vansh Dhiman</h3><div class="mono" style="font-size:11px;letter-spacing:0.18em;color:rgba(234,241,236,0.5);margin-top:8px">CO-FOUNDER</div></div></div>
+        <p style="margin:0;max-width:40ch;font-size:15px;line-height:1.7;color:rgba(234,241,236,0.55)">The builder behind BSN's AI. Architecting the autonomous agents, digital twins and intelligent 3D systems — and the research connecting emotion-driven energies and the multiverse.</p>
+      </div>
+    </section>
+
+    <!-- CONSULTING strip -->
+    <section style="position:relative;padding:clamp(60px,9vh,110px) clamp(18px,5vw,90px);border-bottom:1px solid rgba(234,241,236,0.1)">
+      <div class="bsn-split" style="display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center">
+        <div><span class="mono" data-fade="" style="font-size:11px;letter-spacing:0.2em;color:#2BCB86">FREE FOR FOUNDERS — LIMITED SLOTS</span><h2 data-reveal="" style="margin:16px 0 0;font-weight:500;font-size:clamp(26px,4vw,58px);line-height:1.0;letter-spacing:-0.025em;max-width:20ch">Book a free 3D AI strategy session with the founder.</h2><p data-fade="" style="margin:20px 0 0;max-width:54ch;font-size:16px;line-height:1.7;color:rgba(234,241,236,0.55)">A 30-minute call with Aryan: custom deployment plan, live demo of revenue-generating agents, and how your success powers the mission.</p></div>
+        <button id="bsn-consult-demo" data-cursor-label="BOOK" data-magnetic="" class="mono" style="display:inline-flex;align-items:center;gap:11px;padding:18px 30px;background:#2BCB86;color:#040506;border:none;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;white-space:nowrap">Book free session →</button>
+      </div>
+    </section>
+
+    <!-- ACT 06 — PRICING (spec ledger) -->
+    <section id="pricing" data-act="6" data-actname="ACT 06 — ACCESS" data-screen-label="Pricing" style="position:relative;padding:clamp(70px,11vh,150px) clamp(18px,5vw,90px)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:clamp(34px,6vh,60px)">
+        <span class="mono" data-fade="" style="font-size:11px;letter-spacing:0.2em;color:#2BCB86">06 — ACCESS</span>
+        <span class="mono" data-fade="" style="font-size:11px;letter-spacing:0.2em;color:rgba(234,241,236,0.4)">INVEST IN INTELLIGENCE</span>
+      </div>
+      <h2 data-reveal="" style="margin:0 0 14px;font-weight:500;font-size:clamp(34px,6vw,96px);line-height:0.95;letter-spacing:-0.03em">Pricing that<br>powers the mission.</h2>
+      <p data-fade="" style="margin:0 0 clamp(40px,6vh,64px);max-width:56ch;font-size:16px;line-height:1.7;color:rgba(234,241,236,0.5)">Every rupee invested funds biotechnology, ocean revival, emotion-driven energies, and steps toward the multiverse.</p>
+      <div class="bsn-price-scroll"><div style="min-width:680px">
+        <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;border-top:1px solid rgba(234,241,236,0.16)">
+          <div class="mono" style="padding:22px 0;font-size:11px;letter-spacing:0.14em;color:rgba(234,241,236,0.4)">PLAN</div>
+          <div style="padding:22px 18px;border-left:1px solid rgba(234,241,236,0.1)"><div class="mono" style="font-size:10px;letter-spacing:0.16em;color:rgba(234,241,236,0.4)">STARTER</div><div style="font-size:20px;font-weight:600;margin-top:6px">Seed Agent</div></div>
+          <div style="padding:22px 18px;border-left:1px solid rgba(43,203,134,0.4);background:rgba(43,203,134,0.05)"><div class="mono" style="font-size:10px;letter-spacing:0.16em;color:#2BCB86">★ POPULAR</div><div style="font-size:20px;font-weight:600;margin-top:6px">Lotus Agent</div></div>
+          <div style="padding:22px 18px;border-left:1px solid rgba(234,241,236,0.1)"><div class="mono" style="font-size:10px;letter-spacing:0.16em;color:rgba(234,241,236,0.4)">VISIONARY</div><div style="font-size:20px;font-weight:600;margin-top:6px">Multiverse</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;border-top:1px solid rgba(234,241,236,0.1)">
+          <div class="mono" style="padding:24px 0;font-size:11px;letter-spacing:0.14em;color:rgba(234,241,236,0.4)">PRICE / MO</div>
+          <div style="padding:24px 18px;border-left:1px solid rgba(234,241,236,0.1)"><span style="font-size:30px;font-weight:700">₹99K</span></div>
+          <div style="padding:24px 18px;border-left:1px solid rgba(43,203,134,0.4);background:rgba(43,203,134,0.05)"><span style="font-size:30px;font-weight:700;color:#2BCB86">₹2.99L</span></div>
+          <div style="padding:24px 18px;border-left:1px solid rgba(234,241,236,0.1)"><span style="font-size:30px;font-weight:700">Custom</span></div>
+        </div>
+        <div class="bsn-prow" style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;border-top:1px solid rgba(234,241,236,0.1)"><div class="mono" style="padding:17px 0;font-size:12px;color:rgba(234,241,236,0.55)">AI agents</div><div style="padding:17px;border-left:1px solid rgba(234,241,236,0.1);font-size:14px">1</div><div style="padding:17px;border-left:1px solid rgba(43,203,134,0.4);background:rgba(43,203,134,0.05);font-size:14px">3 advanced</div><div style="padding:17px;border-left:1px solid rgba(234,241,236,0.1);font-size:14px">Unlimited</div></div>
+        <div class="bsn-prow" style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;border-top:1px solid rgba(234,241,236,0.1)"><div class="mono" style="padding:17px 0;font-size:12px;color:rgba(234,241,236,0.55)">Digital twins</div><div style="padding:17px;border-left:1px solid rgba(234,241,236,0.1);font-size:14px">Basic</div><div style="padding:17px;border-left:1px solid rgba(43,203,134,0.4);background:rgba(43,203,134,0.05);font-size:14px">Real-time</div><div style="padding:17px;border-left:1px solid rgba(234,241,236,0.1);font-size:14px">Metaverse</div></div>
+        <div class="bsn-prow" style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;border-top:1px solid rgba(234,241,236,0.1)"><div class="mono" style="padding:17px 0;font-size:12px;color:rgba(234,241,236,0.55)">Efficiency gain</div><div style="padding:17px;border-left:1px solid rgba(234,241,236,0.1);font-size:14px">30%+</div><div style="padding:17px;border-left:1px solid rgba(43,203,134,0.4);background:rgba(43,203,134,0.05);font-size:14px">60–70%</div><div style="padding:17px;border-left:1px solid rgba(234,241,236,0.1);font-size:14px">Bespoke</div></div>
+        <div class="bsn-prow" style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;border-top:1px solid rgba(234,241,236,0.1)"><div class="mono" style="padding:17px 0;font-size:12px;color:rgba(234,241,236,0.55)">Research liaison</div><div style="padding:17px;border-left:1px solid rgba(234,241,236,0.1);font-size:14px;color:rgba(234,241,236,0.35)">—</div><div style="padding:17px;border-left:1px solid rgba(43,203,134,0.4);background:rgba(43,203,134,0.05);font-size:14px;color:#2BCB86">✓</div><div style="padding:17px;border-left:1px solid rgba(234,241,236,0.1);font-size:14px;color:#2BCB86">Dedicated</div></div>
+        <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;border-top:1px solid rgba(234,241,236,0.16)">
+          <div style="padding:26px 0"></div>
+          <div style="padding:26px 18px;border-left:1px solid rgba(234,241,236,0.1)"><button data-open-reg="" data-cursor-label="START" class="mono bsn-pbtn" style="border:1px solid rgba(234,241,236,0.25);color:#EAF1EC">Start →</button></div>
+          <div style="padding:26px 18px;border-left:1px solid rgba(43,203,134,0.4);background:rgba(43,203,134,0.05)"><button data-open-reg="" data-cursor-label="DEPLOY" class="mono bsn-pbtn" style="border:none;background:#2BCB86;color:#040506;font-weight:700">Deploy →</button></div>
+          <div style="padding:26px 18px;border-left:1px solid rgba(234,241,236,0.1)"><button data-open-reg="" data-cursor-label="BUILD" class="mono bsn-pbtn" style="border:1px solid rgba(234,241,236,0.25);color:#EAF1EC">Build →</button></div>
+        </div>
+      </div></div>
+    </section>
+
+    <!-- ACT 07 — JOIN -->
+    <section id="join" data-act="7" data-actname="ACT 07 — IGNITE" data-screen-label="Join" style="position:relative;min-height:90vh;display:flex;flex-direction:column;justify-content:center;padding:clamp(90px,16vh,200px) clamp(18px,5vw,90px);border-top:1px solid rgba(234,241,236,0.1)">
+      <span class="mono" data-fade="" style="font-size:11px;letter-spacing:0.2em;color:#2BCB86">07 — JOIN THE MISSION</span>
+      <h2 data-reveal="" style="margin:22px 0 0;font-weight:500;font-size:clamp(44px,11vw,200px);line-height:0.85;letter-spacing:-0.045em">Build the<br>future.</h2>
+      <div class="bsn-split" style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:30px;margin-top:48px">
+        <p data-fade="" style="margin:0;max-width:52ch;font-size:18px;line-height:1.7;color:rgba(234,241,236,0.55)">Investor, researcher, developer, ocean-tech partner, or consciousness seeker — every submission is personally reviewed.</p>
+        <button data-open-reg="" data-cursor-label="JOIN" data-magnetic="" class="mono" style="display:inline-flex;align-items:center;gap:12px;padding:20px 38px;background:#EAF1EC;color:#040506;border:none;font-size:13px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700">Create your profile →</button>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer style="position:relative;padding:clamp(50px,8vh,90px) clamp(18px,5vw,90px) 40px;border-top:1px solid rgba(234,241,236,0.12);background:rgba(4,5,6,0.6);backdrop-filter:blur(4px)">
+      <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:40px;margin-bottom:54px">
+        <div style="max-width:320px"><div style="display:flex;align-items:center;gap:11px;margin-bottom:18px"><img src="/bsn-logo.png" style="width:36px;height:36px;object-fit:contain" alt="BSN"><span style="font-weight:700;letter-spacing:0.04em">BSN</span></div><p class="mono" style="margin:0;font-size:12px;line-height:1.8;color:rgba(234,241,236,0.45);letter-spacing:0.03em">AUTONOMOUS AI AGENTS FOR THE 3D WORLD — FUNDING BIOTECHNOLOGY, OCEAN REVIVAL, AND THE MULTIVERSE.</p></div>
+        <div class="mono" style="display:flex;gap:clamp(40px,8vw,90px);flex-wrap:wrap;font-size:11px;letter-spacing:0.14em">
+          <div style="display:flex;flex-direction:column;gap:14px"><span style="color:rgba(234,241,236,0.35);margin-bottom:4px">INDEX</span><a href="#manifesto" data-cursor-label="GO" style="color:rgba(234,241,236,0.6)">MANIFESTO</a><a href="#capabilities" data-cursor-label="GO" style="color:rgba(234,241,236,0.6)">CAPABILITIES</a><a href="#research" data-cursor-label="GO" style="color:rgba(234,241,236,0.6)">RESEARCH</a><a href="#pricing" data-cursor-label="GO" style="color:rgba(234,241,236,0.6)">ACCESS</a></div>
+          <div style="display:flex;flex-direction:column;gap:14px"><span style="color:rgba(234,241,236,0.35);margin-bottom:4px">CONNECT</span><a href="#" data-cursor-label="GO" style="color:rgba(234,241,236,0.6)">RESEARCH PAPERS</a><a href="#" data-cursor-label="GO" style="color:rgba(234,241,236,0.6)">3D DEMO PORTAL</a><a href="#join" data-cursor-label="GO" style="color:rgba(234,241,236,0.6)">GET INVOLVED</a><a href="#" data-cursor-label="GO" style="color:rgba(234,241,236,0.6)">PRIVACY</a></div>
+        </div>
+      </div>
+      <div style="border-top:1px solid rgba(234,241,236,0.1);padding-top:28px"><div style="font-weight:700;font-size:clamp(38px,12vw,190px);line-height:0.85;letter-spacing:-0.04em;color:rgba(234,241,236,0.06);white-space:nowrap;text-align:center">BANDNA SHRI NIKA</div></div>
+      <div class="mono" style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:14px;margin-top:28px;font-size:11px;letter-spacing:0.1em;color:rgba(234,241,236,0.4)"><span>© 2026 BANDNA SHRI NIKA — DELHI, INDIA</span><span>ARYAN &amp; VANSH DHIMAN</span></div>
+    </footer>
+
+  </main>
+</div>
